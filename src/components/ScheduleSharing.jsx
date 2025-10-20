@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import authService from '../services/authService';
 import sharingService from '../services/sharingService';
 import analyticsService from '../services/analyticsService';
+import subscriptionService from '../services/subscriptionService';
+import PremiumGate from './PremiumGate';
 import { populateDemoData } from '../services/demoData';
 
 /**
@@ -34,6 +36,7 @@ const ScheduleSharing = ({ onBack }) => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [usageStats, setUsageStats] = useState(null);
 
   // Load user data and existing share links
   useEffect(() => {
@@ -43,6 +46,10 @@ const ScheduleSharing = ({ onBack }) => {
         setCurrentUser(user);
         const userLinks = sharingService.getUserShareLinks(user.id);
         setShareLinks(userLinks);
+        
+        // Load usage statistics
+        const stats = subscriptionService.getUsageStats();
+        setUsageStats(stats);
       }
       setIsLoading(false);
     };
@@ -52,6 +59,15 @@ const ScheduleSharing = ({ onBack }) => {
 
   const handleCreateShare = () => {
     if (!currentUser) return;
+
+    // Check if user can create more share links
+    if (!subscriptionService.canCreateShareLink()) {
+      setMessage({ 
+        type: 'error', 
+        text: 'You\'ve reached your share link limit. Upgrade to Pro to create unlimited share links!' 
+      });
+      return;
+    }
 
     try {
       const shareData = sharingService.generateShareLink(currentUser.id, newSharePermissions);
@@ -185,6 +201,67 @@ const ScheduleSharing = ({ onBack }) => {
               </a>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Usage Statistics */}
+      {usageStats && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Usage Statistics</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Share Links</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Links:</span>
+                  <span className="font-medium">{usageStats.shareLinks.total}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Active Links:</span>
+                  <span className="font-medium">{usageStats.shareLinks.active}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Limit:</span>
+                  <span className="font-medium">
+                    {usageStats.shareLinks.limit === -1 ? 'Unlimited' : usageStats.shareLinks.limit}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Remaining:</span>
+                  <span className="font-medium">
+                    {subscriptionService.getRemainingUsage('maxShareLinks', usageStats.shareLinks.total)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Events</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Events:</span>
+                  <span className="font-medium">{usageStats.events.total}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">This Month:</span>
+                  <span className="font-medium">{usageStats.events.thisMonth}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Limit:</span>
+                  <span className="font-medium">
+                    {usageStats.events.limit === -1 ? 'Unlimited' : usageStats.events.limit}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Remaining:</span>
+                  <span className="font-medium">
+                    {subscriptionService.getRemainingUsage('maxEvents', usageStats.events.total)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -20,7 +20,7 @@ import authService from '../services/authService';
  * TODO: Implement data export functionality
  * TODO: Add GDPR compliance features
  */
-const SettingsPrivacy = ({ onBack, onLogout }) => {
+const SettingsPrivacy = ({ onBack, onLogout, onSubscription }) => {
   const [settings, setSettings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -351,6 +351,13 @@ const SettingsPrivacy = ({ onBack, onLogout }) => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Management</h3>
         
         <div className="space-y-4">
+          <button
+            onClick={onSubscription}
+            className="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-3 rounded-lg font-medium transition-colors"
+          >
+            Manage Subscription
+          </button>
+          
           <button
             onClick={handleExportData}
             className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-lg font-medium transition-colors"

@@ -7,6 +7,7 @@ import CalendarView from './components/CalendarView';
 import MoodStatus from './components/MoodStatus';
 import ScheduleSharing from './components/ScheduleSharing';
 import SharedCalendarView from './components/SharedCalendarView';
+import SubscriptionManager from './components/SubscriptionManager';
 import SettingsPrivacy from './components/SettingsPrivacy';
 import authService from './services/authService';
 import analyticsService from './services/analyticsService';
@@ -155,11 +156,18 @@ function App() {
             onBack={() => setCurrentView('hero')}
           />
         );
+      case 'subscription':
+        return (
+          <SubscriptionManager 
+            onBack={() => setCurrentView('settings')}
+          />
+        );
       case 'settings':
         return (
           <SettingsPrivacy 
             onBack={() => setCurrentView('calendar-view')}
             onLogout={handleLogout}
+            onSubscription={() => setCurrentView('subscription')}
           />
         );
       default:
@@ -225,6 +233,12 @@ function App() {
                   className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                 >
                   Share
+                </button>
+                <button
+                  onClick={() => setCurrentView('subscription')}
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Subscription
                 </button>
                 <button
                   onClick={() => setCurrentView('settings')}

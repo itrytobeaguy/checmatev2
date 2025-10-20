@@ -16,6 +16,54 @@
 const CLOUD_STORAGE_KEY = 'checkmate_users';
 const CURRENT_USER_KEY = 'checkmate_current_user';
 
+// Subscription plans and feature limits
+const SUBSCRIPTION_PLANS = {
+  free: {
+    name: 'Free',
+    price: 0,
+    maxShareLinks: 3,
+    maxEvents: 50,
+    calendarSync: false,
+    analytics: false,
+    teamFeatures: false,
+    customBranding: false,
+    prioritySupport: false
+  },
+  pro: {
+    name: 'Pro',
+    price: 9.99,
+    maxShareLinks: -1, // unlimited
+    maxEvents: -1, // unlimited
+    calendarSync: true,
+    analytics: true,
+    teamFeatures: false,
+    customBranding: false,
+    prioritySupport: false
+  },
+  business: {
+    name: 'Business',
+    price: 19.99,
+    maxShareLinks: -1,
+    maxEvents: -1,
+    calendarSync: true,
+    analytics: true,
+    teamFeatures: true,
+    customBranding: false,
+    prioritySupport: true
+  },
+  enterprise: {
+    name: 'Enterprise',
+    price: 49.99,
+    maxShareLinks: -1,
+    maxEvents: -1,
+    calendarSync: true,
+    analytics: true,
+    teamFeatures: true,
+    customBranding: true,
+    prioritySupport: true
+  }
+};
+
 class AuthService {
   constructor() {
     this.users = this.loadUsersFromCloud();
@@ -91,6 +139,8 @@ class AuthService {
       fullName,
       password: this.hashPassword(password), // In real app, use bcrypt
       createdAt: new Date().toISOString(),
+      subscription: 'free', // Default to free plan
+      subscriptionExpiry: null,
       settings: {
         privacy: {
           shareAvailability: true,
@@ -185,6 +235,62 @@ class AuthService {
   // Get current user
   getCurrentUser() {
     return this.currentUser;
+  }
+
+  // Get subscription plans
+  getSubscriptionPlans() {
+    return SUBSCRIPTION_PLANS;
+  }
+
+  // Get user's current subscription
+  getUserSubscription() {
+    if (!this.currentUser) return SUBSCRIPTION_PLANS.free;
+    return SUBSCRIPTION_PLANS[this.currentUser.subscription] || SUBSCRIPTION_PLANS.free;
+  }
+
+  // Check if user has access to a feature
+  hasFeatureAccess(feature) {
+    const subscription = this.getUserSubscription();
+    return subscription[feature] === true;
+  }
+
+  // Check if user is within limits
+  isWithinLimits(limitType, currentCount) {
+    const subscription = this.getUserSubscription();
+    const limit = subscription[limitType];
+    return limit === -1 || currentCount < limit; // -1 means unlimited
+  }
+
+  // Get remaining limit for a feature
+  getRemainingLimit(limitType, currentCount) {
+    const subscription = this.getUserSubscription();
+    const limit = subscription[limitType];
+    if (limit === -1) return 'Unlimited';
+    return Math.max(0, limit - currentCount);
+  }
+
+  // Upgrade user subscription
+  upgradeSubscription(planName) {
+    if (!this.currentUser) return false;
+    
+    const plan = SUBSCRIPTION_PLANS[planName];
+    if (!plan) return false;
+
+    this.currentUser.subscription = planName;
+    this.currentUser.subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days from now
+    
+    // Update in storage
+    this.users[this.currentUser.email] = this.currentUser;
+    this.saveUsersToCloud();
+    this.saveCurrentUser(this.currentUser);
+    
+    return true;
+  }
+
+  // Check if subscription is active
+  isSubscriptionActive() {
+    if (!this.currentUser || !this.currentUser.subscriptionExpiry) return false;
+    return new Date() < new Date(this.currentUser.subscriptionExpiry);
   }
 
   // Check if user is authenticated
